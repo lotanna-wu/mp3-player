@@ -1,0 +1,9 @@
+pygame # playing audio
+yt-dlp # downloading audio
+mutagen # audio metadata
+Pillow # image processing
+
+pyinstaller # to bundle the app
+# Additional notes:
+# - tkinter is in pythons standard library i think
+# - ffmpeg executable needs to be provided separately in tools/ffmpeg.exe
