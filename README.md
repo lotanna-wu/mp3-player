@@ -1,2 +1,2 @@
-# music-player
+# mp3-player
 a music player
