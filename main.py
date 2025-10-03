@@ -1,19 +1,22 @@
 import tkinter as tk
-from tkinter import filedialog, messagebox, ttk
+from tkinter import filedialog, messagebox
 import pygame
 import os
 import glob
 import random
-from pathlib import Path
 import threading
 import time
 import yt_dlp
 import sys
 import io
+import requests # was gonna use this
+import json
 
+IMAGE_SIZE = (250,250)
+#need to break this up into files or something
 try:
     from mutagen.mp3 import MP3
-    from mutagen.id3 import ID3, APIC
+    from mutagen.id3 import ID3
     MUTAGEN_AVAILABLE = True
 except ImportError:
     MUTAGEN_AVAILABLE = False
@@ -38,14 +41,17 @@ class MusicPlayer:
         self.window = tk.Tk()
         self.window.title("MP3 Player")
 
-        self.window.geometry("860x500")
+        self.window.geometry("810x450")
         self.window.resizable(False, False)
         
         pygame.mixer.init()
         
         self.current_folder = None
+        self.is_filtering = False
         self.playlist = []
+        self.filtered_playlist = []
         self.current_index = 0
+        self.current_song_name = None
         self.is_playing = False
         self.is_paused = False
         self.is_downloading = False
@@ -58,69 +64,64 @@ class MusicPlayer:
     
     def setup_ui(self):
         folder_frame = tk.Frame(self.window)
-        folder_frame.pack(fill="x", padx=10, pady=5)
+        folder_frame.pack(fill="x", padx=10, pady=2)
         tk.Label(folder_frame, text="Folder:").pack(side="left")
-
         self.folder_label = tk.Label(folder_frame, text="No folder selected", bg="white", relief="sunken")
         self.folder_label.pack(side="left", fill="x", expand=True, padx=(5, 5))
-
         self.browse_btn = tk.Button(folder_frame, text="Browse", command=self.browse_folder)
         self.browse_btn.pack(side="right")
 
+        search_frame = tk.Frame(self.window)
+        search_frame.pack(fill="x",padx=10,pady=2)
+        self.search_label = tk.Label(search_frame, text="Search Playlist: ").pack(side="left")
+        self.search_var = tk.StringVar()
+        self.search_var.trace_add("write", self.handle_playlist_search)
+        self.search_box = tk.Entry(search_frame, textvariable=self.search_var)
+        self.search_box.pack(fill="x")
+
         status_frame = tk.Frame(self.window)
         status_frame.pack(fill="x", padx=10, pady=2)
-
         self.status_label = tk.Label(status_frame, text="Ready", fg="black", bg="lightgray", relief="sunken")
         self.status_label.pack(fill="x")
 
         current_frame = tk.Frame(self.window)
-        current_frame.pack(fill="x", padx=10, pady=5)
+        current_frame.pack(fill="x", padx=10, pady=2)
         tk.Label(current_frame, text="Now Playing:  ").pack(side="left")
-
         self.current_song_label = tk.Label(current_frame, text="None", bg="lightgray", relief="sunken")
         self.current_song_label.pack(side="left", fill="x", expand=True, padx=(5, 0))
 
         main_content_frame = tk.Frame(self.window)
-        main_content_frame.pack(fill="both", expand=True, padx=10, pady=5)
+        main_content_frame.pack(fill="both", expand=True, padx=10, pady=2)
 
         playlist_frame = tk.Frame(main_content_frame)
         playlist_frame.pack(side="left", fill="both", expand=True)
-
-        tk.Label(playlist_frame, text="Playlist:").pack(anchor="w")
-
         list_frame = tk.Frame(playlist_frame)
         list_frame.pack(fill="both", expand=True)
-
         scrollbar = tk.Scrollbar(list_frame)
         scrollbar.pack(side="right", fill="y")
-
         self.playlist_box = tk.Listbox(list_frame, yscrollcommand=scrollbar.set)
         self.playlist_box.pack(side="left", fill="both", expand=True)
         self.playlist_box.bind('<<ListboxSelect>>', self.on_song_select)
         scrollbar.config(command=self.playlist_box.yview)
 
-        image_frame = tk.Frame(main_content_frame, width=300, height=300)
-        image_frame.pack(side="right", fill="y", padx=(10, 0))
+        image_frame = tk.Frame(main_content_frame, width=IMAGE_SIZE[0], height=IMAGE_SIZE[1])
+        image_frame.pack(side="right", fill="y", padx=(0, 0))
         image_frame.pack_propagate(False) 
-
         self.album_art_label = tk.Label(image_frame, bg="gray85", text="No Art", relief="sunken")
-        self.album_art_label.pack(fill="both", expand=True, pady=5)
+        self.album_art_label.pack(fill="both", expand=True, pady=2)
 
 
         download_frame = tk.Frame(self.window)
-        download_frame.pack(fill="x", padx=10, pady=5)
+        download_frame.pack(fill="x", padx=10, pady=2)
         tk.Label(download_frame, text="Song URL(YT, SoundCloud, etc):").pack(side="left")
-
         self.url_entry = tk.Entry(download_frame, width=50)
         self.url_entry.pack(side="left", fill="x", expand=True, padx=(5, 5))
         self.url_entry.bind('<Return>', lambda e: self.download_song())
-
         self.download_btn = tk.Button(download_frame, text="Download", command=self.download_song)
         self.download_btn.pack(side="right")
 
         control_frame = tk.Frame(self.window)
-        control_frame.pack(fill="x", padx=10, pady=10)
-
+        control_frame.pack(fill="x", padx=10, pady=0)
         self.prev_btn = tk.Button(control_frame, text="Previous", command=self.previous_song)
         self.prev_btn.pack(side="left", padx=5)
         self.play_btn = tk.Button(control_frame, text="Play", command=self.toggle_play, bg="lightgreen")
@@ -129,13 +130,12 @@ class MusicPlayer:
         self.next_btn.pack(side="left", padx=5)
         self.shuffle_btn = tk.Button(control_frame, text="Shuffle", command=self.shuffle_playlist)
         self.shuffle_btn.pack(side="left", padx=5)
-
         volume_frame = tk.Frame(control_frame)
         volume_frame.pack(side="right", padx=5)
-        tk.Label(volume_frame, text="Volume:").pack(side="left")
+        tk.Label(volume_frame, text="Volume: ").pack(side="left", padx=5, pady=0)
         self.volume_scale = tk.Scale(volume_frame, from_=0, to=100, orient="horizontal", command=self.set_volume, length=100)
         self.volume_scale.set(70)
-        self.volume_scale.pack(side="left")
+        self.volume_scale.pack(side="right", pady=(0,12))
 
     def browse_folder(self):
         folder = filedialog.askdirectory(title="Select Music Folder")
@@ -150,6 +150,25 @@ class MusicPlayer:
         if color != "red":
             self.window.after(5000, lambda: self.status_label.config(text="Ready", fg="black"))
     
+    #somewhere i forgot to switch between the full playlist and the ui
+    #but zybooks is due in an hour
+    def handle_playlist_search(self, *args):
+        query = self.search_var.get().strip()
+        self.playlist_box.delete(0, tk.END)
+
+        if not query:
+            self.is_filtering = False
+            self.ui_playlist = self.playlist.copy()
+        else:
+            self.is_filtering = True
+            self.ui_playlist = []
+            for song in self.playlist:
+                if query.lower() in song.lower():
+                    self.ui_playlist.append(song)
+        
+        for song in self.ui_playlist: self.playlist_box.insert(tk.END, song)
+        
+
     def download_song(self):
         url = self.url_entry.get().strip()
         if not url:
@@ -183,6 +202,7 @@ class MusicPlayer:
                 video_title = info.get('title', 'Unknown')
                 self.window.after(0, lambda: self.update_status(f"Downloading: {video_title[:50]}...", "blue"))
                 ydl.download([url])
+
             self.window.after(0, lambda: self.update_status(f"Downloaded: {video_title[:40]}...", "green"))
             self.window.after(0, lambda: self.url_entry.delete(0, tk.END))
             self.window.after(0, self.load_playlist)
@@ -192,28 +212,31 @@ class MusicPlayer:
             elif "network" in error_msg.lower(): error_msg = "Network error"
             elif "ffmpeg" in error_msg.lower(): error_msg = "FFmpeg not found"
             else: error_msg = f"Download failed: {error_msg[:50]}..."
-            self.window.after(0, lambda: self.update_status(f"✗ {error_msg}", "red"))
+            self.window.after(0, lambda: self.update_status(f"{error_msg}", "red"))
         finally:
             self.is_downloading = False
             self.window.after(0, lambda: self.download_btn.config(state="normal", text="Download"))
     
     def load_playlist(self):
+        self.is_filtering = False
+        self.search_box.delete(0, tk.END)
         if not self.current_folder: return
         mp3_files = glob.glob(os.path.join(self.current_folder, "*.mp3"))
         self.playlist = [os.path.basename(f) for f in mp3_files]
+        self.ui_playlist = self.playlist.copy()
         self.playlist_box.delete(0, tk.END)
-        for song in self.playlist: self.playlist_box.insert(tk.END, song)
-        if self.playlist:
+        for song in self.ui_playlist: self.playlist_box.insert(tk.END, song)
+        if self.ui_playlist:
             self.current_index = 0
             self.playlist_box.select_set(0)
-            self.current_song_label.config(text="Ready to play: " + self.playlist[0])
+            self.current_song_label.config(text="Ready to play: " + self.ui_playlist[0])
             self.clear_album_art()
         elif self.current_folder:
             self.update_status("No MP3 files found in selected folder", "orange")
     
     def toggle_play(self):
-        if not self.playlist:
-            messagebox.showwarning("No Music", "Select a folder with MP3 files")
+        if not self.ui_playlist:
+            messagebox.showwarning("No Music", "No songs in queue")
             return
         if self.is_playing:
             if self.is_paused:
@@ -229,21 +252,21 @@ class MusicPlayer:
 
 
     def play_current_song(self):
-        if not self.playlist or self.current_index >= len(self.playlist):
+        if not self.ui_playlist or self.current_index >= len(self.ui_playlist):
             self.is_playing = False
             pygame.mixer.music.stop()
             self.clear_album_art()
             return
         
-        song_path = os.path.join(self.current_folder, self.playlist[self.current_index])
+        song_path = os.path.join(self.current_folder, self.ui_playlist[self.current_index])
         try:
             pygame.mixer.music.load(song_path)
             pygame.mixer.music.play()
             self.is_playing = True
             self.is_paused = False
             self.play_btn.config(text="Pause")
-            current_song = self.playlist[self.current_index]
-            self.current_song_label.config(text=f"Playing: {current_song}")
+            self.current_song_name = self.ui_playlist[self.current_index]
+            self.current_song_label.config(text=f"Playing: {self.current_song_name}")
             self.playlist_box.selection_clear(0, tk.END)
             self.playlist_box.select_set(self.current_index)
             self.playlist_box.see(self.current_index)
@@ -272,8 +295,8 @@ class MusicPlayer:
                 if key.startswith('APIC'):
                     cover = value.data
                     img = Image.open(io.BytesIO(cover))
-                    frame_width = 300  
-                    frame_height = 300
+                    frame_width = IMAGE_SIZE[0]  
+                    frame_height = IMAGE_SIZE[1]
                     img = ImageOps.fit(img, (frame_width, frame_height), Image.Resampling.LANCZOS)
                     tk_image = ImageTk.PhotoImage(img)
                     self.album_art_label.config(image=tk_image, text="")
@@ -288,35 +311,37 @@ class MusicPlayer:
             self.clear_album_art()
 
     def next_song(self):
-        if not self.playlist: return
-        self.current_index = (self.current_index + 1) % len(self.playlist)
+        if not self.ui_playlist: return
+        self.current_index = (self.current_index + 1) % len(self.ui_playlist)
         if self.is_playing or self.is_paused:
             self.play_current_song()
         else:
             self.playlist_box.selection_clear(0, tk.END)
             self.playlist_box.select_set(self.current_index)
-            self.current_song_label.config(text=f"Ready: {self.playlist[self.current_index]}")
+            self.current_song_label.config(text=f"Ready: {self.ui_playlist[self.current_index]}")
     
     def previous_song(self):
-        if not self.playlist: return
-        self.current_index = (self.current_index - 1 + len(self.playlist)) % len(self.playlist)
+        if not self.ui_playlist: return
+        self.current_index = (self.current_index - 1 + len(self.ui_playlist)) % len(self.ui_playlist)
         if self.is_playing or self.is_paused:
             self.play_current_song()
         else:
             self.playlist_box.selection_clear(0, tk.END)
             self.playlist_box.select_set(self.current_index)
-            self.current_song_label.config(text=f"Ready: {self.playlist[self.current_index]}")
+            self.current_song_label.config(text=f"Ready: {self.ui_playlist[self.current_index]}")
     
     def shuffle_playlist(self):
         if not self.playlist:
             messagebox.showwarning("No Playlist", "Load songs first")
             return
-        current_song = self.playlist[self.current_index] if self.current_index < len(self.playlist) else None
-        random.shuffle(self.playlist)
+        current_song = self.ui_playlist[self.current_index] if self.current_index < len(self.ui_playlist) else None
+        self.search_box.delete(0, tk.END) # will reset self.ui_playlist
+
+        random.shuffle(self.ui_playlist)
         self.playlist_box.delete(0, tk.END)
-        for song in self.playlist: self.playlist_box.insert(tk.END, song)
+        for song in self.ui_playlist: self.playlist_box.insert(tk.END, song)
         try:
-            self.current_index = self.playlist.index(current_song) if current_song else 0
+            self.current_index = self.ui_playlist.index(current_song) if current_song else 0
         except ValueError:
             self.current_index = 0
         if self.playlist: self.playlist_box.select_set(self.current_index)
@@ -324,7 +349,7 @@ class MusicPlayer:
     
     def on_song_select(self, event):
         selection = self.playlist_box.curselection()
-        if selection and self.current_index != selection[0]:
+        if selection and selection[0] < len(self.ui_playlist) and self.current_song_name != self.ui_playlist[selection[0]]:
             self.current_index = selection[0]
             if self.is_playing or self.is_paused:
                 self.play_current_song()

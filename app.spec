@@ -14,7 +14,7 @@ a = Analysis(
     hiddenimports=[
         'pygame', 
         'mutagen', 
-        'pillow'
+        'Pillow'
     ],
     hookspath=[],
     hooksconfig={},
@@ -35,7 +35,7 @@ exe = EXE(
     name='MP3 Player',
     debug=False,
     bootloader_ignore_signals=False,
-    strip=False,
+    strip=True,
     upx=True,
     console=False,
     disable_windowed_traceback=False,
@@ -43,6 +43,7 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
+    icon='sallyrico.ico'
 )
 coll = COLLECT(
     exe,
