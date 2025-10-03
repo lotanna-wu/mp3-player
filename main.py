@@ -41,7 +41,7 @@ class MusicPlayer:
         self.window = tk.Tk()
         self.window.title("MP3 Player")
 
-        self.window.geometry("810x450")
+        self.window.geometry("750x450")
         self.window.resizable(False, False)
         
         pygame.mixer.init()
@@ -63,14 +63,6 @@ class MusicPlayer:
         self.monitor_playback()
     
     def setup_ui(self):
-        folder_frame = tk.Frame(self.window)
-        folder_frame.pack(fill="x", padx=10, pady=2)
-        tk.Label(folder_frame, text="Folder:").pack(side="left")
-        self.folder_label = tk.Label(folder_frame, text="No folder selected", bg="white", relief="sunken")
-        self.folder_label.pack(side="left", fill="x", expand=True, padx=(5, 5))
-        self.browse_btn = tk.Button(folder_frame, text="Browse", command=self.browse_folder)
-        self.browse_btn.pack(side="right")
-
         search_frame = tk.Frame(self.window)
         search_frame.pack(fill="x",padx=10,pady=2)
         self.search_label = tk.Label(search_frame, text="Search Playlist: ").pack(side="left")
@@ -79,11 +71,15 @@ class MusicPlayer:
         self.search_box = tk.Entry(search_frame, textvariable=self.search_var)
         self.search_box.pack(fill="x")
 
-        status_frame = tk.Frame(self.window)
-        status_frame.pack(fill="x", padx=10, pady=2)
-        self.status_label = tk.Label(status_frame, text="Ready", fg="black", bg="lightgray", relief="sunken")
-        self.status_label.pack(fill="x")
+        folder_frame = tk.Frame(self.window)
+        folder_frame.pack(fill="x", padx=10, pady=2)
+        tk.Label(folder_frame, text="Folder:             ").pack(side="left")
+        self.folder_label = tk.Label(folder_frame, text="No folder selected", bg="lightgrey", relief="sunken")
+        self.folder_label.pack(side="left", fill="x", expand=True, padx=(5, 5))
+        self.browse_btn = tk.Button(folder_frame, text="Browse", command=self.browse_folder)
+        self.browse_btn.pack(side="right")
 
+        
         current_frame = tk.Frame(self.window)
         current_frame.pack(fill="x", padx=10, pady=2)
         tk.Label(current_frame, text="Now Playing:  ").pack(side="left")
@@ -120,6 +116,11 @@ class MusicPlayer:
         self.download_btn = tk.Button(download_frame, text="Download", command=self.download_song)
         self.download_btn.pack(side="right")
 
+        status_frame = tk.Frame(self.window)
+        status_frame.pack(fill="x", padx=10, pady=2)
+        self.status_label = tk.Label(status_frame, text="Ready", fg="black", bg="lightgray", relief="sunken")
+        self.status_label.pack(fill="x")
+    
         control_frame = tk.Frame(self.window)
         control_frame.pack(fill="x", padx=10, pady=0)
         self.prev_btn = tk.Button(control_frame, text="Previous", command=self.previous_song)
@@ -266,7 +267,7 @@ class MusicPlayer:
             self.is_paused = False
             self.play_btn.config(text="Pause")
             self.current_song_name = self.ui_playlist[self.current_index]
-            self.current_song_label.config(text=f"Playing: {self.current_song_name}")
+            self.current_song_label.config(text=self.current_song_name)
             self.playlist_box.selection_clear(0, tk.END)
             self.playlist_box.select_set(self.current_index)
             self.playlist_box.see(self.current_index)

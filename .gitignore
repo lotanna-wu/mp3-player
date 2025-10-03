@@ -2,3 +2,4 @@ build/*
 dist/*
 tools/ffmpeg.exe
 .venv
+icons/*
