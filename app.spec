@@ -43,7 +43,6 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon='icons/sallyrico.ico'
 )
 coll = COLLECT(
     exe,
