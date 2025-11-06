@@ -12,7 +12,7 @@ import io
 import requests # was gonna use this
 import json
 
-IMAGE_SIZE = (250,250)
+IMAGE_SIZE = (200,200)
 #need to break this up into files or something
 try:
     from mutagen.mp3 import MP3
@@ -41,7 +41,7 @@ class MusicPlayer:
         self.window = tk.Tk()
         self.window.title("MP3 Player")
 
-        self.window.geometry("750x450")
+        self.window.geometry("600x400")
         self.window.resizable(False, False)
         
         pygame.mixer.init()
@@ -49,6 +49,7 @@ class MusicPlayer:
         self.current_folder = None
         self.is_filtering = False
         self.playlist = []
+        self.ui_playlist = []
         self.filtered_playlist = []
         self.current_index = 0
         self.current_song_name = None
@@ -109,7 +110,7 @@ class MusicPlayer:
 
         download_frame = tk.Frame(self.window)
         download_frame.pack(fill="x", padx=10, pady=2)
-        tk.Label(download_frame, text="Song URL(YT, SoundCloud, etc):").pack(side="left")
+        tk.Label(download_frame, text="URL(YT, SoundCloud, etc):").pack(side="left")
         self.url_entry = tk.Entry(download_frame, width=50)
         self.url_entry.pack(side="left", fill="x", expand=True, padx=(5, 5))
         self.url_entry.bind('<Return>', lambda e: self.download_song())
@@ -117,22 +118,22 @@ class MusicPlayer:
         self.download_btn.pack(side="right")
 
         status_frame = tk.Frame(self.window)
-        status_frame.pack(fill="x", padx=10, pady=2)
+        status_frame.pack(fill="x", padx=10, pady=(2,0))
         self.status_label = tk.Label(status_frame, text="Ready", fg="black", bg="lightgray", relief="sunken")
         self.status_label.pack(fill="x")
     
         control_frame = tk.Frame(self.window)
         control_frame.pack(fill="x", padx=10, pady=0)
-        self.prev_btn = tk.Button(control_frame, text="Previous", command=self.previous_song)
-        self.prev_btn.pack(side="left", padx=5)
+        self.prev_btn = tk.Button(control_frame, text=" < ", command=self.previous_song)
+        self.prev_btn.pack(side="left", padx=5, pady=0)
         self.play_btn = tk.Button(control_frame, text="Play", command=self.toggle_play, bg="lightgreen")
-        self.play_btn.pack(side="left", padx=5)
-        self.next_btn = tk.Button(control_frame, text="Next", command=self.next_song)
-        self.next_btn.pack(side="left", padx=5)
+        self.play_btn.pack(side="left", padx=5, pady=0)
+        self.next_btn = tk.Button(control_frame, text=" > ", command=self.next_song)
+        self.next_btn.pack(side="left", padx=5, pady=0)
         self.shuffle_btn = tk.Button(control_frame, text="Shuffle", command=self.shuffle_playlist)
-        self.shuffle_btn.pack(side="left", padx=5)
+        self.shuffle_btn.pack(side="left", padx=5, pady=0)
         volume_frame = tk.Frame(control_frame)
-        volume_frame.pack(side="right", padx=5)
+        volume_frame.pack(side="right", padx=5, pady=0)
         tk.Label(volume_frame, text="Volume: ").pack(side="left", padx=5, pady=0)
         self.volume_scale = tk.Scale(volume_frame, from_=0, to=100, orient="horizontal", command=self.set_volume, length=100)
         self.volume_scale.set(70)
