@@ -11,7 +11,7 @@ import sys
 import io
 import shutil
 
-IMAGE_SIZE = (200,200)
+ALBUM_ART_SIZE = (220, 260)
 WINDOW_SIZE = "860x560"
 
 # Shared palette for consistent look across Linux and Windows.
@@ -37,7 +37,7 @@ except ImportError:
     print("Mutagen not available. try installing mutagen")
 
 try:
-    from PIL import Image, ImageTk, ImageOps
+    from PIL import Image, ImageOps
     PILLOW_AVAILABLE = True
 except ImportError:
     PILLOW_AVAILABLE = False
@@ -183,13 +183,13 @@ class MusicPlayer:
 
         image_frame = tk.Frame(
             main_content_frame,
-            width=IMAGE_SIZE[0],
-            height=IMAGE_SIZE[1],
+            width=ALBUM_ART_SIZE[0],
+            height=ALBUM_ART_SIZE[1],
             bg=COLORS["panel_bg"],
             relief="solid",
             bd=1,
         )
-        image_frame.pack(side="right", fill="y", padx=(8, 0))
+        image_frame.pack(side="right", padx=(8, 0))
         image_frame.pack_propagate(False) 
         self.album_art_label = tk.Label(
             image_frame,
@@ -482,10 +482,12 @@ class MusicPlayer:
                 if key.startswith('APIC'):
                     cover = value.data
                     img = Image.open(io.BytesIO(cover))
-                    frame_width = IMAGE_SIZE[0]  
-                    frame_height = IMAGE_SIZE[1]
+                    frame_width = max(self.album_art_label.winfo_width(), ALBUM_ART_SIZE[0])
+                    frame_height = max(self.album_art_label.winfo_height(), ALBUM_ART_SIZE[1])
                     img = ImageOps.fit(img, (frame_width, frame_height), Image.Resampling.LANCZOS)
-                    tk_image = ImageTk.PhotoImage(img)
+                    buffer = io.BytesIO()
+                    img.save(buffer, format="PNG")
+                    tk_image = tk.PhotoImage(data=buffer.getvalue())
                     self.album_art_label.config(image=tk_image, text="")
                     self.cover_art_image = tk_image
                     found_image = True
