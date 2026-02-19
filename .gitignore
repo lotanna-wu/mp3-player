@@ -3,3 +3,5 @@ dist/*
 tools/ffmpeg.exe
 .venv
 icons/*
+__pycache__/
+*/__pycache__/

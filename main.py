@@ -9,10 +9,24 @@ import time
 import yt_dlp
 import sys
 import io
-import requests # was gonna use this
-import json
+import shutil
 
 IMAGE_SIZE = (200,200)
+WINDOW_SIZE = "860x560"
+
+# Shared palette for consistent look across Linux and Windows.
+COLORS = {
+    "window_bg": "#f3f4f6",
+    "panel_bg": "#ffffff",
+    "input_bg": "#ffffff",
+    "muted_bg": "#eef2f7",
+    "text": "#111827",
+    "muted_text": "#4b5563",
+    "border": "#cbd5e1",
+    "accent": "#2563eb",
+    "accent_text": "#ffffff",
+    "play": "#16a34a",
+}
 #need to break this up into files or something
 try:
     from mutagen.mp3 import MP3
@@ -30,19 +44,17 @@ except ImportError:
     print("Pillow not available. try installing pillow ")
 
 def get_ffmpeg_path():
-    if getattr(sys, 'frozen', False):
-        base_path = sys._MEIPASS 
-    else:
-        base_path = os.path.dirname(os.path.abspath(__file__))
-    return os.path.join(base_path, 'tools', 'ffmpeg.exe') 
+    return shutil.which("ffmpeg")
 
 class MusicPlayer:
     def __init__(self):
         self.window = tk.Tk()
         self.window.title("MP3 Player")
+        self.window.configure(bg=COLORS["window_bg"])
 
-        self.window.geometry("600x400")
-        self.window.resizable(False, False)
+        self.window.geometry(WINDOW_SIZE)
+        self.window.minsize(780, 540)
+        self.window.resizable(True, True)
         
         pygame.mixer.init()
         
@@ -64,80 +76,249 @@ class MusicPlayer:
         self.monitor_playback()
     
     def setup_ui(self):
-        search_frame = tk.Frame(self.window)
-        search_frame.pack(fill="x",padx=10,pady=2)
-        self.search_label = tk.Label(search_frame, text="Search Playlist: ").pack(side="left")
+        search_frame = tk.Frame(self.window, bg=COLORS["window_bg"])
+        search_frame.pack(fill="x", padx=12, pady=(10, 4))
+        tk.Label(
+            search_frame,
+            text="Search Playlist:",
+            bg=COLORS["window_bg"],
+            fg=COLORS["text"],
+        ).pack(side="left")
         self.search_var = tk.StringVar()
         self.search_var.trace_add("write", self.handle_playlist_search)
-        self.search_box = tk.Entry(search_frame, textvariable=self.search_var)
-        self.search_box.pack(fill="x")
+        self.search_box = tk.Entry(
+            search_frame,
+            textvariable=self.search_var,
+            bg=COLORS["input_bg"],
+            fg=COLORS["text"],
+            relief="solid",
+            highlightthickness=1,
+            highlightbackground=COLORS["border"],
+            highlightcolor=COLORS["accent"],
+            insertbackground=COLORS["text"],
+        )
+        self.search_box.pack(fill="x", padx=(8, 0))
 
-        folder_frame = tk.Frame(self.window)
-        folder_frame.pack(fill="x", padx=10, pady=2)
-        tk.Label(folder_frame, text="Folder:             ").pack(side="left")
-        self.folder_label = tk.Label(folder_frame, text="No folder selected", bg="lightgrey", relief="sunken")
+        folder_frame = tk.Frame(self.window, bg=COLORS["window_bg"])
+        folder_frame.pack(fill="x", padx=12, pady=4)
+        tk.Label(
+            folder_frame,
+            text="Folder:",
+            bg=COLORS["window_bg"],
+            fg=COLORS["text"],
+            width=12,
+            anchor="w",
+        ).pack(side="left")
+        self.folder_label = tk.Label(
+            folder_frame,
+            text="No folder selected",
+            bg=COLORS["muted_bg"],
+            fg=COLORS["muted_text"],
+            relief="solid",
+            bd=1,
+            anchor="w",
+            padx=8,
+            pady=4,
+        )
         self.folder_label.pack(side="left", fill="x", expand=True, padx=(5, 5))
-        self.browse_btn = tk.Button(folder_frame, text="Browse", command=self.browse_folder)
+        self.browse_btn = tk.Button(
+            folder_frame,
+            text="Browse",
+            command=self.browse_folder,
+            bg=COLORS["accent"],
+            fg=COLORS["accent_text"],
+            activebackground="#1d4ed8",
+            activeforeground=COLORS["accent_text"],
+            relief="flat",
+            padx=12,
+            pady=4,
+        )
         self.browse_btn.pack(side="right")
 
-        
-        current_frame = tk.Frame(self.window)
-        current_frame.pack(fill="x", padx=10, pady=2)
-        tk.Label(current_frame, text="Now Playing:  ").pack(side="left")
-        self.current_song_label = tk.Label(current_frame, text="None", bg="lightgray", relief="sunken")
+        current_frame = tk.Frame(self.window, bg=COLORS["window_bg"])
+        current_frame.pack(fill="x", padx=12, pady=4)
+        tk.Label(
+            current_frame,
+            text="Now Playing:",
+            bg=COLORS["window_bg"],
+            fg=COLORS["text"],
+            width=12,
+            anchor="w",
+        ).pack(side="left")
+        self.current_song_label = tk.Label(
+            current_frame,
+            text="None",
+            bg=COLORS["muted_bg"],
+            fg=COLORS["muted_text"],
+            relief="solid",
+            bd=1,
+            anchor="w",
+            padx=8,
+            pady=4,
+        )
         self.current_song_label.pack(side="left", fill="x", expand=True, padx=(5, 0))
 
-        main_content_frame = tk.Frame(self.window)
-        main_content_frame.pack(fill="both", expand=True, padx=10, pady=2)
+        main_content_frame = tk.Frame(self.window, bg=COLORS["window_bg"])
+        main_content_frame.pack(fill="both", expand=True, padx=12, pady=4)
 
-        playlist_frame = tk.Frame(main_content_frame)
+        playlist_frame = tk.Frame(main_content_frame, bg=COLORS["panel_bg"], relief="solid", bd=1)
         playlist_frame.pack(side="left", fill="both", expand=True)
-        list_frame = tk.Frame(playlist_frame)
+        list_frame = tk.Frame(playlist_frame, bg=COLORS["panel_bg"])
         list_frame.pack(fill="both", expand=True)
         scrollbar = tk.Scrollbar(list_frame)
         scrollbar.pack(side="right", fill="y")
-        self.playlist_box = tk.Listbox(list_frame, yscrollcommand=scrollbar.set)
+        self.playlist_box = tk.Listbox(
+            list_frame,
+            yscrollcommand=scrollbar.set,
+            bg=COLORS["input_bg"],
+            fg=COLORS["text"],
+            selectbackground=COLORS["accent"],
+            selectforeground=COLORS["accent_text"],
+            relief="flat",
+            highlightthickness=0,
+        )
         self.playlist_box.pack(side="left", fill="both", expand=True)
         self.playlist_box.bind('<<ListboxSelect>>', self.on_song_select)
         scrollbar.config(command=self.playlist_box.yview)
 
-        image_frame = tk.Frame(main_content_frame, width=IMAGE_SIZE[0], height=IMAGE_SIZE[1])
-        image_frame.pack(side="right", fill="y", padx=(0, 0))
+        image_frame = tk.Frame(
+            main_content_frame,
+            width=IMAGE_SIZE[0],
+            height=IMAGE_SIZE[1],
+            bg=COLORS["panel_bg"],
+            relief="solid",
+            bd=1,
+        )
+        image_frame.pack(side="right", fill="y", padx=(8, 0))
         image_frame.pack_propagate(False) 
-        self.album_art_label = tk.Label(image_frame, bg="gray85", text="No Art", relief="sunken")
+        self.album_art_label = tk.Label(
+            image_frame,
+            bg=COLORS["muted_bg"],
+            fg=COLORS["muted_text"],
+            text="No Art",
+            relief="flat",
+        )
         self.album_art_label.pack(fill="both", expand=True, pady=2)
 
 
-        download_frame = tk.Frame(self.window)
-        download_frame.pack(fill="x", padx=10, pady=2)
-        tk.Label(download_frame, text="URL(YT, SoundCloud, etc):").pack(side="left")
-        self.url_entry = tk.Entry(download_frame, width=50)
-        self.url_entry.pack(side="left", fill="x", expand=True, padx=(5, 5))
+        download_frame = tk.Frame(self.window, bg=COLORS["window_bg"])
+        download_frame.pack(fill="x", padx=12, pady=4)
+        download_frame.columnconfigure(1, weight=1)
+        tk.Label(
+            download_frame,
+            text="URL (YT, SoundCloud, etc):",
+            bg=COLORS["window_bg"],
+            fg=COLORS["text"],
+            anchor="w",
+        ).grid(row=0, column=0, sticky="w")
+        self.url_entry = tk.Entry(
+            download_frame,
+            bg=COLORS["input_bg"],
+            fg=COLORS["text"],
+            relief="solid",
+            highlightthickness=1,
+            highlightbackground=COLORS["border"],
+            highlightcolor=COLORS["accent"],
+            insertbackground=COLORS["text"],
+        )
+        self.url_entry.grid(row=0, column=1, sticky="ew", padx=(8, 8))
         self.url_entry.bind('<Return>', lambda e: self.download_song())
-        self.download_btn = tk.Button(download_frame, text="Download", command=self.download_song)
-        self.download_btn.pack(side="right")
+        self.download_btn = tk.Button(
+            download_frame,
+            text="Download",
+            command=self.download_song,
+            bg=COLORS["accent"],
+            fg=COLORS["accent_text"],
+            activebackground="#1d4ed8",
+            activeforeground=COLORS["accent_text"],
+            relief="flat",
+            padx=12,
+            pady=4,
+        )
+        self.download_btn.grid(row=0, column=2, sticky="e")
 
-        status_frame = tk.Frame(self.window)
-        status_frame.pack(fill="x", padx=10, pady=(2,0))
-        self.status_label = tk.Label(status_frame, text="Ready", fg="black", bg="lightgray", relief="sunken")
+        status_frame = tk.Frame(self.window, bg=COLORS["window_bg"])
+        status_frame.pack(fill="x", padx=12, pady=(4, 0))
+        self.status_label = tk.Label(
+            status_frame,
+            text="Ready",
+            fg=COLORS["muted_text"],
+            bg=COLORS["muted_bg"],
+            relief="solid",
+            bd=1,
+            padx=8,
+            pady=4,
+            anchor="w",
+        )
         self.status_label.pack(fill="x")
     
-        control_frame = tk.Frame(self.window)
-        control_frame.pack(fill="x", padx=10, pady=0)
-        self.prev_btn = tk.Button(control_frame, text=" < ", command=self.previous_song)
+        control_frame = tk.Frame(self.window, bg=COLORS["window_bg"])
+        control_frame.pack(fill="x", padx=12, pady=(6, 10))
+        self.prev_btn = tk.Button(
+            control_frame,
+            text="<",
+            command=self.previous_song,
+            bg=COLORS["panel_bg"],
+            fg=COLORS["text"],
+            relief="solid",
+            bd=1,
+            padx=10,
+            pady=4,
+        )
         self.prev_btn.pack(side="left", padx=5, pady=0)
-        self.play_btn = tk.Button(control_frame, text="Play", command=self.toggle_play, bg="lightgreen")
+        self.play_btn = tk.Button(
+            control_frame,
+            text="Play",
+            command=self.toggle_play,
+            bg=COLORS["play"],
+            fg=COLORS["accent_text"],
+            activebackground="#15803d",
+            activeforeground=COLORS["accent_text"],
+            relief="flat",
+            padx=12,
+            pady=4,
+        )
         self.play_btn.pack(side="left", padx=5, pady=0)
-        self.next_btn = tk.Button(control_frame, text=" > ", command=self.next_song)
+        self.next_btn = tk.Button(
+            control_frame,
+            text=">",
+            command=self.next_song,
+            bg=COLORS["panel_bg"],
+            fg=COLORS["text"],
+            relief="solid",
+            bd=1,
+            padx=10,
+            pady=4,
+        )
         self.next_btn.pack(side="left", padx=5, pady=0)
-        self.shuffle_btn = tk.Button(control_frame, text="Shuffle", command=self.shuffle_playlist)
+        self.shuffle_btn = tk.Button(
+            control_frame,
+            text="Shuffle",
+            command=self.shuffle_playlist,
+            bg=COLORS["panel_bg"],
+            fg=COLORS["text"],
+            relief="solid",
+            bd=1,
+            padx=12,
+            pady=4,
+        )
         self.shuffle_btn.pack(side="left", padx=5, pady=0)
-        volume_frame = tk.Frame(control_frame)
+        volume_frame = tk.Frame(control_frame, bg=COLORS["window_bg"])
         volume_frame.pack(side="right", padx=5, pady=0)
-        tk.Label(volume_frame, text="Volume: ").pack(side="left", padx=5, pady=0)
-        self.volume_scale = tk.Scale(volume_frame, from_=0, to=100, orient="horizontal", command=self.set_volume, length=100)
+        tk.Label(volume_frame, text="Volume:", bg=COLORS["window_bg"], fg=COLORS["text"]).pack(side="left", padx=5, pady=0)
+        self.volume_scale = tk.Scale(
+            volume_frame,
+            from_=0,
+            to=100,
+            orient="horizontal",
+            command=self.set_volume,
+            length=120,
+            bg=COLORS["window_bg"],
+            fg=COLORS["text"],
+            highlightthickness=0,
+        )
         self.volume_scale.set(70)
-        self.volume_scale.pack(side="right", pady=(0,12))
+        self.volume_scale.pack(side="right")
 
     def browse_folder(self):
         folder = filedialog.askdirectory(title="Select Music Folder")
@@ -150,10 +331,10 @@ class MusicPlayer:
     def update_status(self, message, color="black"):
         self.status_label.config(text=message, fg=color)
         if color != "red":
-            self.window.after(5000, lambda: self.status_label.config(text="Ready", fg="black"))
+            self.window.after(
+                5000, lambda: self.status_label.config(text="Ready", fg=COLORS["muted_text"])
+            )
     
-    #somewhere i forgot to switch between the full playlist and the ui
-    #but zybooks is due in an hour
     def handle_playlist_search(self, *args):
         query = self.search_var.get().strip()
         self.playlist_box.delete(0, tk.END)
@@ -190,8 +371,9 @@ class MusicPlayer:
         self.window.after(0, lambda: self.update_status("Starting download...", "blue"))
         self.window.after(0, lambda: self.download_btn.config(state="disabled", text="Downloading..."))
         try:
+            ffmpeg_path = get_ffmpeg_path()
             ydl_opts = {
-                'ffmpeg_location': get_ffmpeg_path(), 'format': 'bestaudio/best',
+                'format': 'bestaudio/best',
                 'postprocessors': [
                     {'key': 'FFmpegExtractAudio', 'preferredcodec': 'mp3', 'preferredquality': '0'},
                     {'key': 'EmbedThumbnail'}, {'key': 'FFmpegMetadata', 'add_metadata': True},
@@ -199,6 +381,8 @@ class MusicPlayer:
                 'outtmpl': os.path.join(self.current_folder, '%(title)s.%(ext)s'),
                 'writethumbnail': True, 'quiet': True, 'no_warnings': True,
             }
+            if ffmpeg_path:
+                ydl_opts["ffmpeg_location"] = ffmpeg_path
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 info = ydl.extract_info(url, download=False)
                 video_title = info.get('title', 'Unknown')
@@ -212,7 +396,8 @@ class MusicPlayer:
             error_msg = str(e)
             if "Video unavailable" in error_msg: error_msg = "Video is unavailable or private"
             elif "network" in error_msg.lower(): error_msg = "Network error"
-            elif "ffmpeg" in error_msg.lower(): error_msg = "FFmpeg not found"
+            elif "ffmpeg" in error_msg.lower():
+                error_msg = "Download failed: FFmpeg not found in PATH"
             else: error_msg = f"Download failed: {error_msg[:50]}..."
             self.window.after(0, lambda: self.update_status(f"{error_msg}", "red"))
         finally:
