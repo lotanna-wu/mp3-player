@@ -3,12 +3,15 @@
 import os
 
 project_root = os.path.abspath(os.path.join(SPECPATH, ".."))
+src_root = os.path.join(project_root, "src")
 
 a = Analysis(
-    [os.path.join(project_root, "main.py")],
-    pathex=[project_root],
+    [os.path.join(src_root, "main.py")],
+    pathex=[src_root],
     binaries=[],
-    datas=[],
+    datas=[
+        (os.path.join(project_root, "assets", "mp3-logo.png"), "assets"),
+    ],
     hiddenimports=[
         "pygame",
         "yt_dlp",
@@ -29,6 +32,7 @@ exe = EXE(
     [],
     exclude_binaries=True,
     name="mp3-player",
+    icon=os.path.join(project_root, "assets", "mp3-logo.png"),
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,

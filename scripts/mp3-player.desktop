@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=MP3 Player
+Comment=Play local MP3 files
+Exec=${INSTALL_DIR}/mp3-player
+Icon=mp3-player
+Terminal=false
+Categories=AudioVideo;Player;
