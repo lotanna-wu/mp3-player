@@ -428,6 +428,7 @@ class MusicPlayer:
             to=100,
             orient="horizontal",
             command=self.set_volume,
+            showvalue=0,
             length=120,
             bg=self.theme["slider_bg"],
             fg=self.colors["text"],
