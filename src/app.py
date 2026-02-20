@@ -43,7 +43,8 @@ DEFAULT_THEME = {
     "album_art_size": [300, 300],
     "border_width": 1,
     "button_border_width": 1,
-    "corner_radius": 0
+    "corner_radius": 0,
+    "relief": "solid"
 }
 
 def _theme_int(value, default_value):
@@ -62,6 +63,14 @@ def _theme_list(value, length, default_value):
 def _theme_size_string(value, default_value):
     if isinstance(value, str) and "x" in value:
         return value
+    return default_value
+
+
+def _theme_relief(value, default_value):
+    if isinstance(value, str):
+        value_lower = value.lower()
+        if value_lower in {"flat", "raised", "sunken", "groove", "ridge", "solid"}:
+            return value_lower
     return default_value
 
 
@@ -160,6 +169,7 @@ class MusicPlayer:
         control_pad = _theme_int(self.theme.get("control_padding"), DEFAULT_THEME["control_padding"])
         border_width = _theme_int(self.theme.get("border_width"), DEFAULT_THEME["border_width"])
         button_border_width = _theme_int(self.theme.get("button_border_width"), DEFAULT_THEME["button_border_width"])
+        relief_style = _theme_relief(self.theme.get("relief"), DEFAULT_THEME["relief"])
 
         search_frame = tk.Frame(self.window, bg=self.colors["window_bg"])
         search_frame.pack(fill="x", padx=pad, pady=(control_pad, 4))
@@ -177,7 +187,7 @@ class MusicPlayer:
             textvariable=self.search_var,
             bg=self.colors["input_bg"],
             fg=self.colors["text"],
-            relief="solid",
+            relief=relief_style,
             highlightthickness=1,
             highlightbackground=self.colors["border"],
             highlightcolor=self.colors["accent"],
@@ -201,7 +211,7 @@ class MusicPlayer:
             text="No folder selected",
             bg=self.colors["muted_bg"],
             fg=self.colors["muted_text"],
-            relief="solid",
+            relief=relief_style,
             bd=border_width,
             anchor="w",
             padx=8,
@@ -239,7 +249,7 @@ class MusicPlayer:
             text="None",
             bg=self.colors["muted_bg"],
             fg=self.colors["muted_text"],
-            relief="solid",
+            relief=relief_style,
             bd=border_width,
             anchor="w",
             padx=8,
@@ -250,7 +260,12 @@ class MusicPlayer:
         main_content_frame = tk.Frame(self.window, bg=self.colors["window_bg"])
         main_content_frame.pack(fill="both", expand=True, padx=pad, pady=4)
 
-        playlist_frame = tk.Frame(main_content_frame, bg=self.colors["panel_bg"], relief="solid", bd=border_width)
+        playlist_frame = tk.Frame(
+            main_content_frame,
+            bg=self.colors["panel_bg"],
+            relief=relief_style,
+            bd=border_width,
+        )
         playlist_frame.pack(side="left", fill="both", expand=True)
         list_frame = tk.Frame(playlist_frame, bg=self.colors["panel_bg"])
         list_frame.pack(fill="both", expand=True, padx=panel_pad, pady=panel_pad)
@@ -284,7 +299,7 @@ class MusicPlayer:
             width=self.album_art_size[0],
             height=self.album_art_size[1],
             bg=self.colors["panel_bg"],
-            relief="solid",
+            relief=relief_style,
             bd=border_width,
         )
         image_frame.pack(side="right", padx=(8, 0))
@@ -314,7 +329,7 @@ class MusicPlayer:
             download_frame,
             bg=self.colors["input_bg"],
             fg=self.colors["text"],
-            relief="solid",
+            relief=relief_style,
             highlightthickness=1,
             highlightbackground=self.colors["border"],
             highlightcolor=self.colors["accent"],
@@ -344,7 +359,7 @@ class MusicPlayer:
             text="Ready",
             fg=self.colors["muted_text"],
             bg=self.colors["muted_bg"],
-            relief="solid",
+            relief=relief_style,
             bd=border_width,
             padx=8,
             pady=4,
@@ -360,7 +375,7 @@ class MusicPlayer:
             command=self.previous_song,
             bg=self.colors["panel_bg"],
             fg=self.colors["text"],
-            relief="solid",
+            relief=relief_style,
             bd=button_border_width,
             padx=10,
             pady=4,
@@ -386,7 +401,7 @@ class MusicPlayer:
             command=self.next_song,
             bg=self.colors["panel_bg"],
             fg=self.colors["text"],
-            relief="solid",
+            relief=relief_style,
             bd=button_border_width,
             padx=10,
             pady=4,
@@ -398,7 +413,7 @@ class MusicPlayer:
             command=self.shuffle_playlist,
             bg=self.colors["panel_bg"],
             fg=self.colors["text"],
-            relief="solid",
+            relief=relief_style,
             bd=button_border_width,
             padx=12,
             pady=4,

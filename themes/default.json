@@ -24,9 +24,16 @@
   "panel_padding": 8,
   "control_padding": 6,
   "window_size": "860x560",
-  "min_window_size": [780, 560],
-  "album_art_size": [300, 300],
+  "min_window_size": [
+    780,
+    560
+  ],
+  "album_art_size": [
+    300,
+    300
+  ],
   "border_width": 1,
   "button_border_width": 1,
-  "corner_radius": 0
+  "corner_radius": 0,
+  "relief": "sunken"
 }

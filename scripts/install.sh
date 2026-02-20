@@ -35,7 +35,10 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-pyinstaller "${project_root}/app.spec"
+pyinstaller \
+  --distpath "${project_root}/dist" \
+  --workpath "${project_root}/build" \
+  "${project_root}/app.spec"
 
 if [[ ! -d "${build_dir}" ]]; then
   echo "Build not found after PyInstaller run: ${build_dir}"
@@ -78,7 +81,7 @@ fi
 
 "${install_cmd[@]}" -m 644 "${project_root}/assets/mp3-logo.png" "${icons_dir}/${app_name}.png"
 
-desktop_src="${script_dir}/${app_name}.desktop"
+desktop_src="${project_root}/scripts/${app_name}.desktop"
 desktop_dst="${apps_dir}/${app_name}.desktop"
 if [[ "${system_install}" == "true" ]]; then
   sed "s#\\\${INSTALL_DIR}#${opt_dir}#g" "${desktop_src}" | sudo tee "${desktop_dst}" >/dev/null

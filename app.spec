@@ -2,7 +2,7 @@
 
 import os
 
-project_root = os.path.abspath(os.path.join(SPECPATH, ".."))
+project_root = os.path.abspath(os.getcwd())
 src_root = os.path.join(project_root, "src")
 
 a = Analysis(
