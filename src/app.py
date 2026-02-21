@@ -24,6 +24,8 @@ DEFAULT_THEME = {
     "accent": "#4c67a2",
     "accent_text": "#ffffff",
     "play": "#3f6f51",
+    "play_hover": "#5aba7f",
+    "accent_hover": "#5d7cbf",
     "scrollbar_bg": "#cbd5e1",
     "scrollbar_trough": "#eef2f7",
     "scrollbar_active": "#94a3b8",
@@ -39,7 +41,6 @@ DEFAULT_THEME = {
     "panel_padding": 8,
     "control_padding": 6,
     "window_size": "860x560",
-    "min_window_size": [780, 540],
     "album_art_size": [300, 300],
     "border_width": 1,
     "button_border_width": 1,
@@ -87,11 +88,12 @@ def build_theme(user_theme):
         "accent": theme["accent"],
         "accent_text": theme["accent_text"],
         "play": theme["play"],
+        "play_hover": theme["play_hover"],
+        "accent_hover": theme["accent_hover"]
     }
     album_art_size = tuple(_theme_list(theme.get("album_art_size"), 2, DEFAULT_THEME["album_art_size"]))
     window_size = _theme_size_string(theme.get("window_size"), DEFAULT_THEME["window_size"])
-    min_window_size = _theme_list(theme.get("min_window_size"), 2, DEFAULT_THEME["min_window_size"])
-    return theme, colors, album_art_size, window_size, min_window_size
+    return theme, colors, album_art_size, window_size
 
 try:
     from mutagen.mp3 import MP3
@@ -111,7 +113,7 @@ except ImportError:
 
 class MusicPlayer:
     def __init__(self, initial_folder=None, theme=None):
-        self.theme, self.colors, self.album_art_size, self.window_size, self.min_window_size = build_theme(theme)
+        self.theme, self.colors, self.album_art_size, self.window_size = build_theme(theme)
         self.window = tk.Tk()
         self.window.title("MP3 Player")
         self.window.configure(bg=self.colors["window_bg"])
@@ -138,8 +140,7 @@ class MusicPlayer:
             self.app_icon = None
 
         self.window.geometry(self.window_size)
-        self.window.minsize(self.min_window_size[0], self.min_window_size[1])
-        self.window.resizable(True, True)
+        self.window.resizable(False, False)
 
         pygame.mixer.init()
 
@@ -224,8 +225,9 @@ class MusicPlayer:
             command=self.browse_folder,
             bg=self.colors["accent"],
             fg=self.colors["accent_text"],
-            activebackground="#1d4ed8",
+            activebackground=self.colors["accent_hover"],
             activeforeground=self.colors["accent_text"],
+            highlightbackground=self.colors["border"],
             relief="flat",
             padx=12,
             pady=4,
@@ -343,8 +345,9 @@ class MusicPlayer:
             command=self.download_song,
             bg=self.colors["accent"],
             fg=self.colors["accent_text"],
-            activebackground="#1d4ed8",
+            activebackground=self.colors["accent_hover"],
             activeforeground=self.colors["accent_text"],
+            highlightbackground=self.colors["border"],
             relief="flat",
             padx=12,
             pady=4,
@@ -375,6 +378,7 @@ class MusicPlayer:
             command=self.previous_song,
             bg=self.colors["panel_bg"],
             fg=self.colors["text"],
+            highlightbackground=self.colors["border"],
             relief=relief_style,
             bd=button_border_width,
             padx=10,
@@ -387,8 +391,9 @@ class MusicPlayer:
             command=self.toggle_play,
             bg=self.colors["play"],
             fg=self.colors["accent_text"],
-            activebackground="#15803d",
+            activebackground=self.colors["play_hover"],
             activeforeground=self.colors["accent_text"],
+            highlightbackground=self.colors["border"],
             relief="flat",
             padx=12,
             pady=4,
@@ -401,6 +406,7 @@ class MusicPlayer:
             command=self.next_song,
             bg=self.colors["panel_bg"],
             fg=self.colors["text"],
+            highlightbackground=self.colors["border"],
             relief=relief_style,
             bd=button_border_width,
             padx=10,
@@ -413,6 +419,7 @@ class MusicPlayer:
             command=self.shuffle_playlist,
             bg=self.colors["panel_bg"],
             fg=self.colors["text"],
+            highlightbackground=self.colors["border"],
             relief=relief_style,
             bd=button_border_width,
             padx=12,

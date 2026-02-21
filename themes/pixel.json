@@ -9,6 +9,8 @@
   "accent": "#66ff66",
   "accent_text": "#0f0f0f",
   "play": "#ffcc00",
+  "play_hover": "#ffe066",
+  "accent_hover": "#99ff99",
   "scrollbar_bg": "#3a3a3a",
   "scrollbar_trough": "#101010",
   "scrollbar_active": "#66ff66",
@@ -24,14 +26,7 @@
   "panel_padding": 6,
   "control_padding": 6,
   "window_size": "860x560",
-  "min_window_size": [
-    760,
-    560
-  ],
-  "album_art_size": [
-    240,
-    240
-  ],
+  "album_art_size": [240, 240],
   "border_width": 1,
   "button_border_width": 1,
   "corner_radius": 0,

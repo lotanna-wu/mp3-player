@@ -54,6 +54,8 @@ def load_theme():
         with open(theme_path, "r", encoding="utf-8") as handle:
             return json.load(handle)
     except FileNotFoundError:
+        print("Failed to load theme: FileNotFoundError")
         return {}
     except json.JSONDecodeError:
+        print("Failed to load theme: JSONDecodeError")
         return {}
